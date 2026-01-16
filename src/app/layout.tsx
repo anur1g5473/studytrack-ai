@@ -19,7 +19,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
+      <head>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            :root {
+              color-scheme: dark;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+          `
+        }} />
+      </head>
+      <body className={inter.className}>
         <div className="min-h-screen bg-[#0a0a0f] retro-grid">
           <AuthProvider>
             {children}

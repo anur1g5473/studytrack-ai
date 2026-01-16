@@ -58,12 +58,13 @@ export function useSyllabus() {
     }
   }, []);
 
-  // Topics
+  // Topics - FIXED: Now accepts all 4 parameters
   const addTopic = useCallback(
     async (
       chapterId: string,
       name: string,
-      difficulty: "easy" | "medium" | "hard" = "medium"
+      difficulty: "easy" | "medium" | "hard" = "medium",
+      estimatedMinutes: number = 30
     ) => {
       if (!user) return;
       setLoading(true);
@@ -73,7 +74,8 @@ export function useSyllabus() {
           user.id,
           chapterId,
           name,
-          difficulty
+          difficulty,
+          estimatedMinutes
         );
         return topic;
       } catch (err) {

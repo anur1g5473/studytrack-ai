@@ -21,7 +21,7 @@ const navItems = [
     name: "Focus",
     href: "/focus",
     icon: Clock,
-    disabled: true,
+    disabled: false,
   },
   {
     name: "Analytics",
