@@ -20,23 +20,17 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            :root {
-              color-scheme: dark;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-            }
-          `
-        }} />
+        {/* KaTeX CSS for Math Formulas */}
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+          integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className={inter.className}>
         <div className="min-h-screen bg-[#0a0a0f] retro-grid">
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </div>
       </body>
     </html>

@@ -82,3 +82,79 @@
     color: white;
   }
 }
+
+/* AI Response Styling */
+.ai-response {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.ai-response .katex {
+  font-size: 1.1em;
+  color: #67e8f9;
+}
+
+.ai-response .katex-display {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(34, 211, 238, 0.1));
+  border-radius: 0.75rem;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  overflow-x: auto;
+}
+
+/* Formula Highlight Box */
+.formula-box {
+  background: linear-gradient(135deg, #1e1b4b, #0f172a);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+/* Subscript and Superscript */
+.ai-response sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+  color: #a5b4fc;
+}
+
+.ai-response sup {
+  font-size: 0.75em;
+  vertical-align: super;
+  color: #a5b4fc;
+}
+
+/* Greek Letters & Symbols */
+.ai-response .math-symbol {
+  color: #22d3ee;
+  font-weight: 500;
+}
+
+/* List Styling in AI Response */
+.ai-response ol {
+  counter-reset: item;
+}
+
+.ai-response ol > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.ai-response ol > li::before {
+  counter-increment: item;
+  content: counter(item) ".";
+  color: #22d3ee;
+  font-weight: 700;
+  min-width: 1.5rem;
+}
+
+/* Highlight for Key Terms */
+.ai-response mark {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(34, 211, 238, 0.3));
+  color: #e0f2fe;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+}
