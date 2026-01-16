@@ -7,7 +7,33 @@ export function createClient() {
   );
 }
 
-// Helper functions for common auth operations
+// Get the correct redirect URL based on environment
+function getRedirectURL() {
+  // Check if we're on the server or client
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/auth/callback`;
+  }
+  
+  // For server-side, use environment variable
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (siteUrl) {
+    return `${siteUrl}/auth/callback`;
+  }
+  
+  // Fallback to localhost for development
+  return "http://localhost:3000/auth/callback";
+}
+
+export async function signInWithGoogle() {
+  const supabase = createClient();
+  return await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: getRedirectURL(),
+    },
+  });
+}
+
 export async function signInWithEmail(email: string, password: string) {
   const supabase = createClient();
   return await supabase.auth.signInWithPassword({
@@ -25,16 +51,7 @@ export async function signUpWithEmail(email: string, password: string, fullName:
       data: {
         full_name: fullName,
       },
-    },
-  });
-}
-
-export async function signInWithGoogle() {
-  const supabase = createClient();
-  return await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: getRedirectURL(),
     },
   });
 }
@@ -46,8 +63,6 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   return user;
 }
