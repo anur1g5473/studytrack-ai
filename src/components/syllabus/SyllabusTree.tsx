@@ -77,6 +77,51 @@ export function SyllabusTree() {
     loadSyllabusData();
   }, [subjects, user]);
 
+  const handleAddSubject = async (name: string, color: string): Promise<void> => {
+    try {
+      await addSubject(name, color);
+      setAddSubjectOpen(false);
+    } catch (error) {
+      console.error("Failed to add subject:", error);
+    }
+  };
+
+  const handleAddChapter = async (
+    subjectId: string,
+    name: string
+  ): Promise<void> => {
+    try {
+      const chapter = await addChapter(subjectId, name);
+      if (chapter) {
+        setChapters((prev) => ({
+          ...prev,
+          [subjectId]: [...(prev[subjectId] || []), chapter],
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to add chapter:", error);
+    }
+  };
+
+  const handleAddTopic = async (
+    chapterId: string,
+    name: string,
+    difficulty: "easy" | "medium" | "hard",
+    estimatedMinutes: number
+  ): Promise<void> => {
+    try {
+      const topic = await addTopic(chapterId, name, difficulty, estimatedMinutes);
+      if (topic) {
+        setTopics((prev) => ({
+          ...prev,
+          [chapterId]: [...(prev[chapterId] || []), topic],
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to add topic:", error);
+    }
+  };
+
   const handleDeleteSubject = async (subjectId: string) => {
     setDeleteTarget({ type: "subject", id: subjectId });
     setDeleteConfirmOpen(true);
@@ -99,23 +144,37 @@ export function SyllabusTree() {
       if (deleteTarget.type === "subject") {
         const { deleteSubject } = await import("@/lib/supabase/queries");
         await deleteSubject(deleteTarget.id);
-        setSubjects(subjects.filter((s) => s.id !== deleteTarget.id));
+        setChapters((prev) => {
+          const newChapters = { ...prev };
+          delete newChapters[deleteTarget.id];
+          return newChapters;
+        });
       } else if (deleteTarget.type === "chapter") {
         await deleteChapter(deleteTarget.id);
-        // Update local state
-        Object.keys(chapters).forEach((subjectId) => {
-          setChapters((prev) => ({
-            ...prev,
-            [subjectId]: prev[subjectId].filter((c) => c.id !== deleteTarget.id),
-          }));
+        setChapters((prev) => {
+          const newChapters = { ...prev };
+          Object.keys(newChapters).forEach((subjectId) => {
+            newChapters[subjectId] = newChapters[subjectId].filter(
+              (c) => c.id !== deleteTarget.id
+            );
+          });
+          return newChapters;
+        });
+        setTopics((prev) => {
+          const newTopics = { ...prev };
+          delete newTopics[deleteTarget.id];
+          return newTopics;
         });
       } else if (deleteTarget.type === "topic") {
         await deleteTopic(deleteTarget.id);
-        Object.keys(topics).forEach((chapterId) => {
-          setTopics((prev) => ({
-            ...prev,
-            [chapterId]: prev[chapterId].filter((t) => t.id !== deleteTarget.id),
-          }));
+        setTopics((prev) => {
+          const newTopics = { ...prev };
+          Object.keys(newTopics).forEach((chapterId) => {
+            newTopics[chapterId] = newTopics[chapterId].filter(
+              (t) => t.id !== deleteTarget.id
+            );
+          });
+          return newTopics;
         });
       }
       setDeleteConfirmOpen(false);
@@ -160,7 +219,7 @@ export function SyllabusTree() {
           </h1>
           <p className="text-gray-400 mt-1">
             {subjects.length} subject{subjects.length !== 1 ? "s" : ""} •{" "}
-            {Object.keys(topics).length} topics
+            {Object.values(topics).reduce((sum, arr) => sum + arr.length, 0)} topics
           </p>
         </div>
 
@@ -184,8 +243,8 @@ export function SyllabusTree() {
               subject={subject}
               chapters={chapters[subject.id] || []}
               topics={topics}
-              onAddChapter={addChapter}
-              onAddTopic={addTopic}
+              onAddChapter={handleAddChapter}
+              onAddTopic={handleAddTopic}
               onEditTopic={handleEditTopic}
               onDeleteTopic={handleDeleteTopic}
               onDeleteSubject={handleDeleteSubject}
@@ -214,7 +273,7 @@ export function SyllabusTree() {
       <AddSubjectDialog
         isOpen={addSubjectOpen}
         isLoading={isLoading}
-        onSubmit={addSubject}
+        onSubmit={handleAddSubject}
         onClose={() => setAddSubjectOpen(false)}
       />
 
@@ -233,7 +292,13 @@ export function SyllabusTree() {
 
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
-        title={`Delete ${deleteTarget?.type === "subject" ? "Subject" : deleteTarget?.type === "chapter" ? "Chapter" : "Topic"}?`}
+        title={`Delete ${
+          deleteTarget?.type === "subject"
+            ? "Subject"
+            : deleteTarget?.type === "chapter"
+            ? "Chapter"
+            : "Topic"
+        }?`}
         description={`This action cannot be undone. All nested items will also be deleted.`}
         confirmText="Delete"
         isDangerous
@@ -246,9 +311,4 @@ export function SyllabusTree() {
       />
     </div>
   );
-}
-
-// Helper function to update subjects in store (we'll need this)
-function setSubjects(subjects: any) {
-  // This would be imported from store
 }

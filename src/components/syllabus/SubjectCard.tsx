@@ -12,7 +12,12 @@ type SubjectCardProps = {
   chapters: Chapter[];
   topics: Record<string, Topic[]>; // keyed by chapter ID
   onAddChapter: (subjectId: string, name: string) => Promise<void>;
-  onAddTopic: (chapterId: string, name: string, difficulty: "easy" | "medium" | "hard", estimatedMinutes: number) => Promise<void>;
+  onAddTopic: (
+    chapterId: string,
+    name: string,
+    difficulty: "easy" | "medium" | "hard",
+    estimatedMinutes: number
+  ) => Promise<void>;
   onEditTopic: (topic: Topic) => void;
   onDeleteTopic: (topicId: string) => void;
   onDeleteSubject: (subjectId: string) => void;
@@ -39,7 +44,7 @@ export function SubjectCard({
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAddChapter = async (name: string) => {
+  const handleAddChapter = async (name: string): Promise<void> => {
     setIsLoading(true);
     try {
       await onAddChapter(subject.id, name);
@@ -49,7 +54,11 @@ export function SubjectCard({
     }
   };
 
-  const handleAddTopic = async (name: string, difficulty: "easy" | "medium" | "hard", estimatedMinutes: number) => {
+  const handleAddTopic = async (
+    name: string,
+    difficulty: "easy" | "medium" | "hard",
+    estimatedMinutes: number
+  ): Promise<void> => {
     if (!selectedChapter) return;
     setIsLoading(true);
     try {

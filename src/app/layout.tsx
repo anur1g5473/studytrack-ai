@@ -18,11 +18,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
-        <AuthProvider>
-          <div className="min-h-screen bg-[#0a0a0f] retro-grid">{children}</div>
-        </AuthProvider>
+        <div className="min-h-screen bg-[#0a0a0f] retro-grid">
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </div>
       </body>
     </html>
   );

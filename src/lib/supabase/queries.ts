@@ -120,7 +120,8 @@ export async function createTopic(
   userId: string,
   chapterId: string,
   name: string,
-  difficulty: "easy" | "medium" | "hard" = "medium"
+  difficulty: "easy" | "medium" | "hard" = "medium",
+  estimatedMinutes: number = 30
 ) {
   const { data, error } = await supabase
     .from("topics")
@@ -129,6 +130,7 @@ export async function createTopic(
       chapter_id: chapterId,
       name,
       difficulty,
+      estimated_minutes: estimatedMinutes,
     })
     .select()
     .single();
