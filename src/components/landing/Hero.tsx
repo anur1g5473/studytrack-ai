@@ -71,15 +71,15 @@ export function Hero() {
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
-          <Link href="/demo">
+          <Link href="/login">
             <Button variant="secondary" size="lg" className="group">
               <Play className="mr-2 w-5 h-5" />
-              Guest Access
+              Login
             </Button>
           </Link>
         </motion.div>
 
-              {/* Stats */}
+        {/* Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -88,21 +88,21 @@ export function Hero() {
         >
           <div className="text-center">
             <div className="text-2xl sm:text-3xl font-bold text-white">
-              Coming Soon
+              AI
             </div>
-            <div className="text-sm text-gray-500">Live Stats</div>
+            <div className="text-sm text-gray-500">Powered</div>
           </div>
           <div className="text-center">
             <div className="text-2xl sm:text-3xl font-bold text-white">
-              Coming Soon
+              100%
             </div>
-            <div className="text-sm text-gray-500">Live Stats</div>
+            <div className="text-sm text-gray-500">Focus</div>
           </div>
           <div className="text-center">
             <div className="text-2xl sm:text-3xl font-bold text-white">
-              Coming Soon
+              Free
             </div>
-            <div className="text-sm text-gray-500">Live Stats</div>
+            <div className="text-sm text-gray-500">To Start</div>
           </div>
         </motion.div>
 

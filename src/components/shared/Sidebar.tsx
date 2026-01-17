@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Clock, BarChart3, Settings, Menu, X, Brain, Zap, CalendarIcon } from "lucide-react";
+import { LayoutDashboard, BookOpen, Clock, BarChart3, Settings, Menu, X, Brain, Zap, CalendarIcon, Trophy } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -46,11 +46,15 @@ const navItems = [
   href: "/planner",
   icon: CalendarIcon,
 },
+{
+  name: "Leaderboard",
+  href: "/leaderboard",
+  icon: Trophy,
+},
   {
     name: "Settings",
     href: "/settings",
     icon: Settings,
-    disabled: true,
   },
 ];
 

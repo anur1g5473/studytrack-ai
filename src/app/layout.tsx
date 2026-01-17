@@ -27,6 +27,17 @@ export default function RootLayout({
           integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
           crossOrigin="anonymous"
         />
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            :root {
+              color-scheme: dark;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+          `
+        }} />
       </head>
       <body className={inter.className}>
         <div className="min-h-screen bg-[#0a0a0f] retro-grid">

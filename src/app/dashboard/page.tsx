@@ -2,20 +2,35 @@
 
 import { useStore } from "@/store/useStore";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Calendar, Target, Clock, Zap, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { OnboardingModal } from "@/components/modals/OnboardingModal";
 
 export default function DashboardPage() {
   const { user, isLoading } = useStore();
   const router = useRouter();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    // Check if user has seen onboarding
+    const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
+    if (!hasSeenOnboarding && user) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
+
+  const handleCloseOnboarding = () => {
+    setShowOnboarding(false);
+    localStorage.setItem("hasSeenOnboarding", "true");
+  };
 
   if (isLoading || !user) {
     return (
@@ -153,29 +168,35 @@ export default function DashboardPage() {
             </button>
           </Link>
 
-          <button className="w-full flex flex-col items-center justify-center p-6 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-cyan-500 transition-all group opacity-50 cursor-not-allowed">
-            <div className="w-12 h-12 bg-cyan-600/20 rounded-lg flex items-center justify-center mb-3">
-              <Clock className="w-6 h-6 text-cyan-400" />
-            </div>
-            <div className="text-sm font-medium text-white">Focus Mode</div>
-            <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
-          </button>
+          <Link href="/focus" className="block">
+            <button className="w-full flex flex-col items-center justify-center p-6 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-cyan-500 transition-all group">
+              <div className="w-12 h-12 bg-cyan-600/20 rounded-lg flex items-center justify-center mb-3 group-hover:bg-cyan-600/30">
+                <Clock className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div className="text-sm font-medium text-white">Focus Mode</div>
+              <div className="text-xs text-gray-500 mt-1">Start session</div>
+            </button>
+          </Link>
 
-          <button className="w-full flex flex-col items-center justify-center p-6 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-green-500 transition-all group opacity-50 cursor-not-allowed">
-            <div className="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center mb-3">
-              <Calendar className="w-6 h-6 text-green-400" />
-            </div>
-            <div className="text-sm font-medium text-white">View Plan</div>
-            <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
-          </button>
+          <Link href="/planner" className="block">
+            <button className="w-full flex flex-col items-center justify-center p-6 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-green-500 transition-all group">
+              <div className="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center mb-3">
+                <Calendar className="w-6 h-6 text-green-400" />
+              </div>
+              <div className="text-sm font-medium text-white">Planner</div>
+              <div className="text-xs text-gray-500 mt-1">Weekly schedule</div>
+            </button>
+          </Link>
 
-          <button className="w-full flex flex-col items-center justify-center p-6 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-purple-500 transition-all group opacity-50 cursor-not-allowed">
-            <div className="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-3">
-              <Zap className="w-6 h-6 text-purple-400" />
-            </div>
-            <div className="text-sm font-medium text-white">Flashcards</div>
-            <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
-          </button>
+          <Link href="/flashcards" className="block">
+            <button className="w-full flex flex-col items-center justify-center p-6 bg-gray-800/50 border border-gray-700 rounded-xl hover:border-purple-500 transition-all group">
+              <div className="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-3">
+                <Zap className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="text-sm font-medium text-white">Flashcards</div>
+              <div className="text-xs text-gray-500 mt-1">Review Decks</div>
+            </button>
+          </Link>
         </div>
       </div>
 
@@ -193,6 +214,8 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      <OnboardingModal isOpen={showOnboarding} onClose={handleCloseOnboarding} />
     </div>
   );
 }
