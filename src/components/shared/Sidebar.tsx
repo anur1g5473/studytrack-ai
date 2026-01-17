@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Clock, BarChart3, Settings, Menu, X, Brain } from "lucide-react";
+import { LayoutDashboard, BookOpen, Clock, BarChart3, Settings, Menu, X, Brain, Zap, CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,18 @@ const navItems = [
   name: "AI Advisor",
   href: "/ai-advisor",
   icon: Brain,
+},
+{
+  name: "Flashcards",
+  href: "/flashcards",
+  icon: Zap, // Import Zap from lucide-react
+},
+
+// ... inside navItems array:
+{
+  name: "Planner",
+  href: "/planner",
+  icon: CalendarIcon,
 },
   {
     name: "Settings",
