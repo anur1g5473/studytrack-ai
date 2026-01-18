@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { X, Plus, Trash2, Save } from "lucide-react";
-import * as queries from "@/lib/supabase/flashcard-queries";
+// import * as queries from "@/lib/supabase/flashcard-queries"; // Removed direct Supabase queries
 import { useStore } from "@/store/useStore";
 
 type ManualSetDialogProps = {
@@ -23,6 +23,7 @@ export function ManualSetDialog({ isOpen, onClose, onSuccess }: ManualSetDialogP
   const [description, setDescription] = useState("");
   const [cards, setCards] = useState<CardDraft[]>([{ front: "", back: "" }]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // Added error state
 
   const handleAddCard = () => {
     setCards([...cards, { front: "", back: "" }]);
@@ -40,34 +41,51 @@ export function ManualSetDialog({ isOpen, onClose, onSuccess }: ManualSetDialogP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !title.trim()) return;
+    if (!user) return;
 
     // Filter out empty cards
     const validCards = cards.filter((c) => c.front.trim() && c.back.trim());
     if (validCards.length === 0) {
-      alert("Please add at least one valid card.");
+      setError("Please add at least one valid card.");
       return;
     }
 
     setLoading(true);
+    setError(null); // Clear previous errors
 
     try {
-      // 1. Create Set
-      const newSet = await queries.createFlashcardSet(
-        user.id,
-        title,
-        description || "Manual deck"
+      // 1. Create Set using the API route
+      const createSetResponse = await fetch("/api/flashcards/sets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || "Manual deck",
+          // topicId: // If linking to syllabus topics, add here
+        }),
+      });
+      const newSet = await createSetResponse.json();
+
+      if (!createSetResponse.ok) {
+        throw new Error(newSet.error || "Failed to create flashcard set.");
+      }
+
+      // 2. Create Cards using the API route
+      const cardPromises = validCards.map((card) =>
+        fetch("/api/flashcards/cards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            setId: newSet.id,
+            front: card.front,
+            back: card.back,
+          }),
+        }).then(res => {
+          if (!res.ok) return res.json().then(err => Promise.reject(err.error));
+          return res.json();
+        })
       );
-
-      // 2. Create Cards
-      const cardsToSave = validCards.map((c) => ({
-        set_id: newSet.id,
-        user_id: user.id,
-        front: c.front,
-        back: c.back,
-      }));
-
-      await queries.createFlashcards(cardsToSave);
+      await Promise.all(cardPromises);
 
       onSuccess();
       onClose();
@@ -75,9 +93,9 @@ export function ManualSetDialog({ isOpen, onClose, onSuccess }: ManualSetDialogP
       setTitle("");
       setDescription("");
       setCards([{ front: "", back: "" }]);
-    } catch (error) {
-      console.error("Failed to create set:", error);
-      alert("Failed to save flashcards. Please try again.");
+    } catch (err: any) {
+      console.error("Failed to create set:", err);
+      setError(err.message || "Failed to save flashcards. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -146,6 +164,12 @@ export function ManualSetDialog({ isOpen, onClose, onSuccess }: ManualSetDialogP
               </div>
             ))}
           </div>
+
+          {error && (
+            <p className="text-sm text-center text-red-400 mb-4">
+              {error}
+            </p>
+          )}
 
           {/* Footer Actions */}
           <div className="flex gap-3 border-t border-gray-800 pt-4">

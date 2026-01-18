@@ -1,24 +1,54 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchAdminStats, fetchRecentActivity } from "@/lib/supabase/admin-queries";
+// Removed imports from @/lib/supabase/admin-queries
 import { Users, Clock, Zap, Activity } from "lucide-react";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [activity, setActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
-      const statsData = await fetchAdminStats();
-      const activityData = await fetchRecentActivity();
-      setStats(statsData);
-      setActivity(activityData);
+      setLoading(true);
+      setError(null);
+      try {
+        const statsResponse = await fetch("/api/admin/stats");
+        const statsData = await statsResponse.json();
+        if (statsResponse.ok) {
+          setStats(statsData);
+        } else {
+          throw new Error(statsData.error || "Failed to fetch admin statistics.");
+        }
+
+        const activityResponse = await fetch("/api/admin/activity");
+        const activityData = await activityResponse.json();
+        if (activityResponse.ok) {
+          setActivity(activityData);
+        } else {
+          throw new Error(activityData.error || "Failed to fetch recent activity.");
+        }
+      } catch (err: any) {
+        console.error("Admin Dashboard Data Error:", err);
+        setError(err.message || "Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
 
-  if (!stats) return <div className="text-white">Loading stats...</div>;
+  if (loading) return <div className="text-white">Loading dashboard...</div>;
+  if (error) return <div className="text-red-500">Error: {error}</div>;
+
+  // Dummy data for now, replace with actual values from stats object when available
+  // For now, I'll assume `stats` object contains these keys directly from the API.
+  const totalUsers = stats?.totalUsers || 0;
+  const totalHours = "N/A"; // Not directly calculated in the API yet, needs aggregation
+  const totalSessions = stats?.activeSessions || 0; // Using activeSessions as placeholder
+  const activeUsers = "N/A"; // Not directly calculated in the API yet, needs aggregation
 
   return (
     <div className="space-y-8">
@@ -33,7 +63,7 @@ export default function AdminDashboard() {
             </div>
             <span className="text-green-400 text-sm">+12%</span>
           </div>
-          <h3 className="text-2xl font-bold text-white">{stats.totalUsers}</h3>
+          <h3 className="text-2xl font-bold text-white">{totalUsers}</h3>
           <p className="text-gray-400 text-sm">Total Users</p>
         </div>
 
@@ -43,7 +73,7 @@ export default function AdminDashboard() {
               <Clock className="w-6 h-6" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-white">{stats.totalHours}</h3>
+          <h3 className="text-2xl font-bold text-white">{totalHours}</h3>
           <p className="text-gray-400 text-sm">Hours Studied</p>
         </div>
 
@@ -53,7 +83,7 @@ export default function AdminDashboard() {
               <Zap className="w-6 h-6" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-white">{stats.totalSessions}</h3>
+          <h3 className="text-2xl font-bold text-white">{totalSessions}</h3>
           <p className="text-gray-400 text-sm">Focus Sessions</p>
         </div>
 
@@ -63,7 +93,7 @@ export default function AdminDashboard() {
               <Activity className="w-6 h-6" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-white">{stats.activeUsers}</h3>
+          <h3 className="text-2xl font-bold text-white">{activeUsers}</h3>
           <p className="text-gray-400 text-sm">Active (7d)</p>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useStore } from "@/store/useStore";
-import * as queries from "@/lib/supabase/queries";
+// import * as queries from "@/lib/supabase/queries"; // Removed direct Supabase queries
 import type { Chapter, Topic } from "@/types/database.types";
 
 export function useSyllabus() {
@@ -17,8 +17,18 @@ export function useSyllabus() {
       setLoading(true);
       setError(null);
       try {
-        const chapter = await queries.createChapter(user.id, subjectId, name);
-        return chapter;
+        const response = await fetch("/api/syllabus/chapters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subjectId, name }),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          return data;
+        } else {
+          throw new Error(data.error || "Failed to add chapter.");
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to add chapter";
         setError(message);
@@ -34,7 +44,18 @@ export function useSyllabus() {
     setLoading(true);
     setError(null);
     try {
-      return await queries.updateChapter(id, updates);
+      const response = await fetch(`/api/syllabus/chapters/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        return data;
+      } else {
+        throw new Error(data.error || "Failed to update chapter.");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update chapter";
       setError(message);
@@ -48,7 +69,14 @@ export function useSyllabus() {
     setLoading(true);
     setError(null);
     try {
-      await queries.deleteChapter(id);
+      const response = await fetch(`/api/syllabus/chapters/${id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete chapter.");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete chapter";
       setError(message);
@@ -58,7 +86,7 @@ export function useSyllabus() {
     }
   }, []);
 
-  // Topics - FIXED: Now accepts all 4 parameters
+  // Topics
   const addTopic = useCallback(
     async (
       chapterId: string,
@@ -70,14 +98,18 @@ export function useSyllabus() {
       setLoading(true);
       setError(null);
       try {
-        const topic = await queries.createTopic(
-          user.id,
-          chapterId,
-          name,
-          difficulty,
-          estimatedMinutes
-        );
-        return topic;
+        const response = await fetch("/api/syllabus/topics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chapterId, name, difficulty, estimatedMinutes }),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          return data;
+        } else {
+          throw new Error(data.error || "Failed to add topic.");
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to add topic";
         setError(message);
@@ -93,7 +125,18 @@ export function useSyllabus() {
     setLoading(true);
     setError(null);
     try {
-      return await queries.updateTopic(id, updates);
+      const response = await fetch(`/api/syllabus/topics/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        return data;
+      } else {
+        throw new Error(data.error || "Failed to update topic.");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update topic";
       setError(message);
@@ -107,7 +150,14 @@ export function useSyllabus() {
     setLoading(true);
     setError(null);
     try {
-      await queries.deleteTopic(id);
+      const response = await fetch(`/api/syllabus/topics/${id}`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete topic.");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete topic";
       setError(message);

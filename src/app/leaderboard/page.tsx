@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchLeaderboard, checkAndAwardBadges } from "@/lib/supabase/leaderboard-queries";
 import { useStore } from "@/store/useStore";
 import { UserRankCard } from "@/components/leaderboard/UserRankCard";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
@@ -9,20 +8,29 @@ import { Trophy } from "lucide-react";
 
 export default function LeaderboardPage() {
   const { user } = useStore();
-  const [users, setUsers] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [userRank, setUserRank] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      // 1. Check for badges for current user
-      if (user) {
-        await checkAndAwardBadges(user.id);
-      }
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/leaderboard${user ? `?userId=${user.id}` : ""}`);
+        const data = await response.json();
 
-      // 2. Fetch Leaderboard
-      const data = await fetchLeaderboard();
-      setUsers(data || []);
-      setLoading(false);
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch leaderboard data");
+        }
+
+        setLeaderboard(data.leaderboard || []);
+        setUserRank(data.userRank || null);
+      } catch (error) {
+        console.error("Failed to load leaderboard:", error);
+        // TODO: Implement a more robust client-side error notification (e.g., toast)
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();
@@ -36,7 +44,7 @@ export default function LeaderboardPage() {
     );
   }
 
-  const top3 = users.slice(0, 3);
+  const top3 = leaderboard.slice(0, 3);
 
   return (
     <div className="space-y-12 max-w-5xl mx-auto">
@@ -58,8 +66,15 @@ export default function LeaderboardPage() {
         </div>
       )}
 
+      {userRank && !top3.some(u => u.id === userRank.id) && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Your Rank</h2>
+          <UserRankCard user={userRank} rank={userRank.rank} isCurrentUser={true} />
+        </div>
+      )}
+
       {/* The Rest */}
-      <LeaderboardTable users={users} currentUserEmail={user?.email || ""} />
+      <LeaderboardTable users={leaderboard} currentUserEmail={user?.email || ""} />
     </div>
   );
 }

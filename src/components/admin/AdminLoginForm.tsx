@@ -22,32 +22,29 @@ export function AdminLoginForm() {
 
     try {
       // 1. Attempt Login
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("No user found");
+      if (authError) throw new Error("Authentication failed. Invalid credentials.");
+      
+      // 2. Verify Admin Status via Server-Side API
+      const adminCheckResponse = await fetch("/api/admin/check");
+      const adminCheckData = await adminCheckResponse.json();
 
-      // 2. Check Admin Status immediately
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", authData.user.id)
-        .single();
-
-      if (!profile?.is_admin) {
-        // If not admin, kick them out immediately
+      if (!adminCheckData.isAdmin) {
+        // If not admin, kick them out immediately and redirect to login
         await supabase.auth.signOut();
-        throw new Error("ACCESS DENIED: Insufficient Clearance Level.");
+        throw new Error(adminCheckData.error || "ACCESS DENIED: Insufficient Clearance Level.");
       }
 
       // 3. Redirect to Command Center
       router.push("/admin");
       
     } catch (err: any) {
-      setError(err.message || "Authentication failed");
+      console.error("Admin Login Error:", err);
+      setError(err.message || "Authentication failed.");
     } finally {
       setLoading(false);
     }

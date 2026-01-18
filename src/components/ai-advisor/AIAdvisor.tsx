@@ -7,7 +7,7 @@ import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ChatSuggestions } from "./ChatSuggestions";
 import { generateResponse } from "@/lib/gemini";
-import * as chatQueries from "@/lib/supabase/chat-queries";
+// import * as chatQueries from "@/lib/supabase/chat-queries"; // Removed direct Supabase queries
 import { Button } from "@/components/ui/Button";
 import {
   MessageSquare,
@@ -43,13 +43,32 @@ export function AIAdvisor() {
       }
 
       try {
-        const session = await chatQueries.createChatSession(user.id);
-        setSessionId(session.id);
+        // Create new session if none exists or load existing ones
+        const createSessionResponse = await fetch("/api/chat/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}), // Title can be empty for initial creation
+        });
+        const newSession = await createSessionResponse.json();
 
-        const sessions = await chatQueries.getChatSessions(user.id);
-        setChatSessions(sessions);
+        if (createSessionResponse.ok) {
+          setSessionId(newSession.id);
+        } else {
+          throw new Error(newSession.error || "Failed to create new chat session.");
+        }
+
+        const sessionsResponse = await fetch("/api/chat/sessions");
+        const sessionsData = await sessionsResponse.json();
+
+        if (sessionsResponse.ok) {
+          setChatSessions(sessionsData);
+        } else {
+          throw new Error(sessionsData.error || "Failed to fetch chat sessions.");
+        }
+
       } catch (error) {
         console.error("Failed to initialize chat:", error);
+        // Optionally, show a user-friendly error message
       }
     };
 
@@ -67,25 +86,36 @@ export function AIAdvisor() {
     try {
       setLoading(true);
 
-      const userMessage = await chatQueries.saveChatMessage(
-        sessionId,
-        user.id,
-        "user",
-        content
-      );
+      // Save user message
+      const userMessageResponse = await fetch("/api/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, role: "user", content }),
+      });
+      const userMessage = await userMessageResponse.json();
+      if (!userMessageResponse.ok) {
+        throw new Error(userMessage.error || "Failed to save user message.");
+      }
       setMessages((prev) => [...prev, userMessage]);
 
-      const aiResponse = await generateResponse(content, user.id);
+      // Get AI response
+      const aiResponseContent = await generateResponse(content, user.id);
 
-      const assistantMessage = await chatQueries.saveChatMessage(
-        sessionId,
-        user.id,
-        "assistant",
-        aiResponse
-      );
+      // Save AI message
+      const assistantMessageResponse = await fetch("/api/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, role: "ai", content: aiResponseContent }),
+      });
+      const assistantMessage = await assistantMessageResponse.json();
+      if (!assistantMessageResponse.ok) {
+        throw new Error(assistantMessage.error || "Failed to save AI message.");
+      }
       setMessages((prev) => [...prev, assistantMessage]);
+
     } catch (error) {
       console.error("Failed to send message:", error);
+      // Optionally, show a user-friendly error message
     } finally {
       setLoading(false);
     }
@@ -95,41 +125,78 @@ export function AIAdvisor() {
     if (!user) return;
 
     try {
-      const session = await chatQueries.createChatSession(user.id);
-      setSessionId(session.id);
-      setMessages([]);
-      setIsSidebarOpen(false);
+      const createSessionResponse = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const newSession = await createSessionResponse.json();
 
-      const sessions = await chatQueries.getChatSessions(user.id);
-      setChatSessions(sessions);
+      if (createSessionResponse.ok) {
+        setSessionId(newSession.id);
+        setMessages([]);
+        setIsSidebarOpen(false);
+
+        const sessionsResponse = await fetch("/api/chat/sessions");
+        const sessionsData = await sessionsResponse.json();
+        if (sessionsResponse.ok) {
+          setChatSessions(sessionsData);
+        } else {
+          throw new Error(sessionsData.error || "Failed to fetch chat sessions.");
+        }
+      } else {
+        throw new Error(newSession.error || "Failed to create new chat session.");
+      }
     } catch (error) {
       console.error("Failed to create new chat:", error);
+      // Optionally, show a user-friendly error message
     }
   };
 
   const handleLoadSession = async (sessionIdToLoad: string) => {
     try {
       setSessionId(sessionIdToLoad);
-      const chatMessages = await chatQueries.getChatMessages(sessionIdToLoad);
-      setMessages(chatMessages);
-      setIsSidebarOpen(false);
+      const messagesResponse = await fetch(`/api/chat/messages?sessionId=${sessionIdToLoad}`);
+      const chatMessages = await messagesResponse.json();
+
+      if (messagesResponse.ok) {
+        setMessages(chatMessages);
+        setIsSidebarOpen(false);
+      } else {
+        throw new Error(chatMessages.error || "Failed to load chat messages.");
+      }
     } catch (error) {
       console.error("Failed to load session:", error);
+      // Optionally, show a user-friendly error message
     }
   };
 
   const handleDeleteSession = async (sessionIdToDelete: string) => {
     try {
-      await chatQueries.deleteChatSession(sessionIdToDelete);
+      const deleteResponse = await fetch(`/api/chat/sessions/${sessionIdToDelete}`, {
+        method: "DELETE",
+      });
 
-      const sessions = await chatQueries.getChatSessions(user!.id);
-      setChatSessions(sessions);
+      const deleteResult = await deleteResponse.json();
 
-      if (sessionIdToDelete === sessionId) {
-        handleNewChat();
+      if (deleteResponse.ok) {
+        const sessionsResponse = await fetch("/api/chat/sessions");
+        const sessionsData = await sessionsResponse.json();
+        if (sessionsResponse.ok) {
+          setChatSessions(sessionsData);
+        } else {
+          throw new Error(sessionsData.error || "Failed to fetch chat sessions after deletion.");
+        }
+
+        if (sessionIdToDelete === sessionId) {
+          handleNewChat();
+        }
+      } else {
+        throw new Error(deleteResult.error || "Failed to delete session.");
       }
     } catch (error) {
       console.error("Failed to delete session:", error);
+      // Optionally, show a user-friendly error message
     }
   };
 

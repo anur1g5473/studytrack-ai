@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/store/useStore";
@@ -11,7 +9,7 @@ import { MoodEnvironmentSelector } from "./MoodEnvironment";
 import { SessionSummary } from "./SessionSummary";
 import { Slider } from "@/components/ui/Slider";
 import { Button } from "@/components/ui/Button";
-import * as sessionQueries from "@/lib/supabase/session-queries";
+import * as sessionQueries from "@/lib/supabase/session-queries"; // Keep for createFocusSession
 import { MOOD_ENVIRONMENTS } from "@/types/focus.types";
 import type { Distraction } from "@/types/focus.types";
 import { ChevronDown } from "lucide-react";
@@ -19,6 +17,7 @@ import { ChevronDown } from "lucide-react";
 export function FocusMode() {
   const router = useRouter();
   const { user } = useStore();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // State for user-facing errors
 
   // Timer setup
   const [timerMinutes, setTimerMinutes] = useState(25);
@@ -41,6 +40,7 @@ export function FocusMode() {
   // Initialize session
   const handleStartSession = async () => {
     if (!user) return;
+    setErrorMessage(null);
 
     try {
       const session = await sessionQueries.createFocusSession(user.id, {
@@ -51,32 +51,47 @@ export function FocusMode() {
       setSessionStarted(true);
       timer.start();
     } catch (error) {
+      // For production, send error to a server-side logging service
       console.error("Failed to start session:", error);
+      setErrorMessage("Failed to start session. Please try again.");
     }
   };
 
   const handleSessionComplete = async (completed: boolean) => {
     if (!sessionId || !user) return;
+    setErrorMessage(null);
 
     const elapsedMinutes = timerMinutes - Math.ceil(timer.timeRemaining / 60);
-    const xpEarned = completed ? elapsedMinutes * 10 : elapsedMinutes * 5;
-
+    
     try {
-      await sessionQueries.completeFocusSession(sessionId, user.id, {
-        xpEarned,
-        completed,
-        distractions,
+      const response = await fetch("/api/focus/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          completed,
+          elapsedMinutes,
+          distractions,
+        }),
       });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       setSessionData({
         duration: elapsedMinutes,
-        xpEarned,
+        xpEarned: data.xpEarned, // XP now comes from server
         completed,
       });
       setShowSummary(true);
       timer.stop();
     } catch (error) {
+      // For production, send error to a server-side logging service
       console.error("Failed to complete session:", error);
+      setErrorMessage("Failed to complete session. Please try again.");
     }
   };
 
@@ -131,6 +146,13 @@ export function FocusMode() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 space-y-8">
+        {/* Error Message Display */}
+        {errorMessage && (
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+            {errorMessage}
+          </div>
+        )}
+
         {/* Setup Phase */}
         {!sessionStarted && !showSummary && (
           <div className="w-full max-w-2xl space-y-6">

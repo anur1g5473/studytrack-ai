@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
-import * as queries from "@/lib/supabase/flashcard-queries";
+// import * as queries from "@/lib/supabase/flashcard-queries"; // Removed direct Supabase queries
 import { FlashcardSetCard } from "./FlashcardSetCard";
 import { CreateSetDialog } from "./CreateSetDialog";
 import { ManualSetDialog } from "./ManualSetDialog";
@@ -18,14 +18,23 @@ export function FlashcardDashboard() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [activeStudySet, setActiveStudySet] = useState<Flashcard[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSets = async () => {
     if (!user) return;
+    setLoading(true);
+    setError(null);
     try {
-      const data = await queries.fetchSetsWithStats(user.id);
-      setSets(data);
-    } catch (error) {
-      console.error("Failed to fetch sets:", error);
+      const response = await fetch("/api/flashcards/sets");
+      const data = await response.json();
+      if (response.ok) {
+        setSets(data || []);
+      } else {
+        throw new Error(data.error || "Failed to fetch flashcard sets.");
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch sets:", err);
+      setError(err.message || "Failed to load flashcard sets.");
     } finally {
       setLoading(false);
     }
@@ -36,13 +45,29 @@ export function FlashcardDashboard() {
   }, [user]);
 
   const handleStudy = async (setId: string) => {
+    if (!user) return;
+    setError(null);
     try {
       // First try to get due cards
-      let cards = await queries.fetchDueCards(setId);
-      
-      // If no cards due, ask if they want to review all (for now just fetch all)
+      let cards: Flashcard[] = [];
+      const dueCardsResponse = await fetch(`/api/flashcards/cards?setId=${setId}&dueOnly=true`);
+      const dueCardsData = await dueCardsResponse.json();
+
+      if (dueCardsResponse.ok) {
+        cards = dueCardsData;
+      } else {
+        console.warn("Failed to fetch due cards, attempting to fetch all cards:", dueCardsData.error);
+      }
+
+      // If no cards due, fetch all cards
       if (cards.length === 0) {
-        cards = await queries.fetchAllCards(setId);
+        const allCardsResponse = await fetch(`/api/flashcards/cards?setId=${setId}`);
+        const allCardsData = await allCardsResponse.json();
+        if (allCardsResponse.ok) {
+          cards = allCardsData;
+        } else {
+          throw new Error(allCardsData.error || "Failed to fetch all cards for study.");
+        }
       }
 
       if (cards.length > 0) {
@@ -50,15 +75,34 @@ export function FlashcardDashboard() {
       } else {
         alert("No cards in this set!");
       }
-    } catch (error) {
-      console.error("Error starting study:", error);
+    } catch (err: any) {
+      console.error("Error starting study:", err);
+      setError(err.message || "Failed to start study session.");
     }
   };
 
   const handleDelete = async (setId: string) => {
-    if (confirm("Delete this flashcard set?")) {
-      await queries.deleteSet(setId);
-      setSets(sets.filter((s) => s.id !== setId));
+    if (!user) return;
+    setError(null);
+    if (confirm("Delete this flashcard set? This action cannot be undone.")) {
+      try {
+        const response = await fetch(`/api/flashcards/sets/${setId}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          setSets(sets.filter((s) => s.id !== setId));
+          if (activeStudySet && activeStudySet[0]?.set_id === setId) {
+            setActiveStudySet(null); // Clear study mode if the active set was deleted
+          }
+        } else {
+          throw new Error(data.error || "Failed to delete flashcard set.");
+        }
+      } catch (err: any) {
+        console.error("Failed to delete set:", err);
+        setError(err.message || "Failed to delete flashcard set.");
+      }
     }
   };
 
@@ -98,6 +142,12 @@ export function FlashcardDashboard() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="p-3 bg-red-950/30 border border-red-900/50 rounded-lg text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Grid */}
       {loading ? (

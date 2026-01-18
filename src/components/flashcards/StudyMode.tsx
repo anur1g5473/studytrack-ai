@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, RotateCcw } from "lucide-react";
 import type { Flashcard, ReviewRating } from "@/types/flashcard.types";
-import { calculateNextReview } from "@/lib/srs-algorithm";
-import * as queries from "@/lib/supabase/flashcard-queries";
+// import { calculateNextReview } from "@/lib/srs-algorithm"; // Removed client-side SRS calculation
+// import * as queries from "@/lib/supabase/flashcard-queries"; // Removed direct Supabase queries
 import { Button } from "@/components/ui/Button";
 
 type StudyModeProps = {
@@ -18,6 +18,7 @@ export function StudyMode({ cards, onClose }: StudyModeProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
   const [studyQueue, setStudyQueue] = useState(cards);
+  const [error, setError] = useState<string | null>(null); // Added error state
 
   const currentCard = studyQueue[currentIndex];
 
@@ -25,24 +26,45 @@ export function StudyMode({ cards, onClose }: StudyModeProps) {
 
   const handleRate = async (rating: ReviewRating) => {
     if (!currentCard) return;
+    setError(null); // Clear previous errors
 
-    // Calculate new interval
-    const updates = calculateNextReview(currentCard, rating);
-
-    // Save to DB
-    await queries.updateCardProgress(currentCard.id, updates);
-
-    // If rated "Again", re-queue it at end of session
-    if (rating === "again") {
-      setStudyQueue((prev) => [...prev, currentCard]);
+    let quality: number;
+    switch (rating) {
+      case "again": quality = 1; break; // Hardest
+      case "hard": quality = 3; break;
+      case "good": quality = 4; break;
+      case "easy": quality = 5; break; // Easiest
+      default: quality = 3; // Default to 'hard' if something goes wrong
     }
 
-    // Move to next
-    if (currentIndex < studyQueue.length - 1) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex(currentIndex + 1), 150); // Slight delay for smoother transition
-    } else {
-      setFinished(true);
+    try {
+      const response = await fetch(`/api/flashcards/cards/${currentCard.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateProgress", quality }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update card progress.");
+      }
+
+      // If rated "Again", re-queue it at end of session
+      if (rating === "again") {
+        setStudyQueue((prev) => [...prev, currentCard]);
+      }
+
+      // Move to next
+      if (currentIndex < studyQueue.length - 1) {
+        setIsFlipped(false);
+        setTimeout(() => setCurrentIndex(currentIndex + 1), 150); // Slight delay for smoother transition
+      } else {
+        setFinished(true);
+      }
+    } catch (err: any) {
+      console.error("Error updating card progress:", err);
+      setError(err.message || "Failed to update card progress. Please try again.");
     }
   };
 
@@ -83,6 +105,12 @@ export function StudyMode({ cards, onClose }: StudyModeProps) {
           <X className="w-6 h-6" />
         </button>
       </div>
+
+      {error && (
+        <div className="p-3 bg-red-950/30 border border-red-900/50 rounded-lg text-red-400 text-sm">
+          Error: {error}
+        </div>
+      )}
 
       {/* Card Area */}
       <div className="flex-1 flex items-center justify-center p-6 perspective-1000">

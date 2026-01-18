@@ -1,5 +1,8 @@
 "use client";
 
+// TODO: This diagnostic page should ideally be removed or restricted in production environments.
+// If it must exist, consider protecting it with authentication or environment-based checks.
+
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +28,9 @@ export default function TestPage() {
       const { data, error } = await supabase.from("profiles").select("count");
 
       if (error) {
+        // Log detailed error server-side (in a real implementation, this would be sent to a logging service)
+        console.error("Supabase connection test error:", error.message, error.code);
+        
         // If table doesn't exist or no rows, that's okay for now
         if (error.code === "PGRST116" || error.message.includes("0 rows")) {
           setStatus("success");
@@ -39,9 +45,13 @@ export default function TestPage() {
         setDetails(`Connection verified. Profiles table accessible.`);
       }
     } catch (err) {
+      // Log detailed error server-side (in a real implementation, this would be sent to a logging service)
+      console.error("Supabase connection test error:", err instanceof Error ? err.message : "Unknown error");
+      
       setStatus("error");
       setMessage("Connection Failed");
-      setDetails(err instanceof Error ? err.message : "Unknown error");
+      // Return a generic error message to the user instead of exposing detailed error information
+      setDetails("Supabase connection failed. Please check your network or configuration.");
     }
   }
 
@@ -145,41 +155,6 @@ export default function TestPage() {
               ← Back to Home
             </Button>
           </Link>
-        </div>
-
-        {/* Environment Check */}
-        <div className="mt-8 p-4 bg-gray-800/50 rounded-lg">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">
-            Environment Variables:
-          </h3>
-          <div className="space-y-1 text-xs font-mono">
-            <p className="text-gray-400">
-              SUPABASE_URL:{" "}
-              <span
-                className={
-                  process.env.NEXT_PUBLIC_SUPABASE_URL
-                    ? "text-green-400"
-                    : "text-red-400"
-                }
-              >
-                {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing"}
-              </span>
-            </p>
-            <p className="text-gray-400">
-              SUPABASE_ANON_KEY:{" "}
-              <span
-                className={
-                  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-                    ? "text-green-400"
-                    : "text-red-400"
-                }
-              >
-                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-                  ? "✓ Set"
-                  : "✗ Missing"}
-              </span>
-            </p>
-          </div>
         </div>
       </div>
     </main>

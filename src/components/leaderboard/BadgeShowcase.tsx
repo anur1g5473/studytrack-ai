@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { UserBadge } from "@/types/gamification.types";
+import { sanitizeInput } from "@/lib/utils"; // Import the utility function
 
 type BadgeShowcaseProps = {
   badges: UserBadge[];
@@ -29,13 +30,13 @@ export function BadgeShowcase({ badges }: BadgeShowcaseProps) {
             className="flex flex-col items-center p-4 bg-gray-800/50 rounded-xl border border-gray-700 hover:border-yellow-500/50 transition-colors group"
           >
             <div className="text-4xl mb-2 filter drop-shadow-lg group-hover:scale-110 transition-transform">
-              {userBadge.badge?.icon || "🏅"}
+              {sanitizeInput(userBadge.badge?.icon || "🏅")}
             </div>
             <p className="font-bold text-white text-sm text-center">
-              {userBadge.badge?.name}
+              {sanitizeInput(userBadge.badge?.name || "")}
             </p>
             <p className="text-xs text-gray-500 text-center mt-1">
-              {userBadge.badge?.description}
+              {sanitizeInput(userBadge.badge?.description || "")}
             </p>
           </motion.div>
         ))}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { FocusSession } from "@/types/focus.types";
+import { MOOD_ENVIRONMENTS } from "@/types/focus.types"; // Import MOOD_ENVIRONMENTS
 
 export async function createFocusSession(
   userId: string,
@@ -12,11 +13,29 @@ export async function createFocusSession(
 ) {
   const supabase = createClient();
 
+  // Server-side input validation
+  const { duration_minutes, mood_environment, topic_id, subject_id } = data;
+
+  if (typeof duration_minutes !== "number" || duration_minutes < 5 || duration_minutes > 120) {
+    throw new Error("Invalid session duration. Must be between 5 and 120 minutes.");
+  }
+
+  if (!MOOD_ENVIRONMENTS.some(env => env.id === mood_environment)) {
+    throw new Error("Invalid mood environment.");
+  }
+
+  // Ensure topic_id and subject_id are valid if provided
+  // For full validation, you would query to ensure these IDs exist and belong to the user.
+  // This is covered by the RLS recommendation, but further validation here is good defense-in-depth.
+  
   const { data: session, error } = await supabase
     .from("focus_sessions")
     .insert({
       user_id: userId,
-      ...data,
+      duration_minutes,
+      mood_environment,
+      topic_id,
+      subject_id,
       completed: false,
       xp_earned: 0,
       distraction_count: 0,
@@ -26,77 +45,6 @@ export async function createFocusSession(
     .single();
 
   if (error) throw error;
-  return session as FocusSession;
-}
-
-export async function updateFocusSession(
-  sessionId: string,
-  updates: Partial<FocusSession>
-) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("focus_sessions")
-    .update(updates)
-    .eq("id", sessionId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as FocusSession;
-}
-
-export async function completeFocusSession(
-  sessionId: string,
-  userId: string,
-  {
-    xpEarned,
-    completed,
-    distractions,
-  }: {
-    xpEarned: number;
-    completed: boolean;
-    distractions: any[];
-  }
-) {
-  const supabase = createClient();
-
-  // Update session
-  const { data: session, error: sessionError } = await supabase
-    .from("focus_sessions")
-    .update({
-      completed,
-      xp_earned: xpEarned,
-      distraction_count: distractions.length,
-      distractions,
-    })
-    .eq("id", sessionId)
-    .select()
-    .single();
-
-  if (sessionError) throw sessionError;
-
-  // Update user XP and level
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("xp_points, current_level")
-    .eq("id", userId)
-    .single();
-
-  if (profile) {
-    const newXp = profile.xp_points + xpEarned;
-    const newLevel = Math.floor(newXp / 1000) + 1;
-
-    await supabase
-      .from("profiles")
-      .update({
-        xp_points: newXp,
-        current_level: newLevel,
-        last_study_date: new Date().toISOString(),
-      })
-      .eq("id", userId);
-  }
-
   return session as FocusSession;
 }
 

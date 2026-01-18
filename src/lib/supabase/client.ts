@@ -36,15 +36,22 @@ export async function signInWithGoogle() {
 
 export async function signInWithEmail(email: string, password: string) {
   const supabase = createClient();
-  return await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
+
+  if (error) {
+    console.error("Sign-in error:", error); // Log the detailed error
+    return { data, error: { message: "Invalid credentials" } }; // Return a generic error
+  }
+
+  return { data, error };
 }
 
 export async function signUpWithEmail(email: string, password: string, fullName: string) {
   const supabase = createClient();
-  return await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -54,6 +61,13 @@ export async function signUpWithEmail(email: string, password: string, fullName:
       emailRedirectTo: getRedirectURL(),
     },
   });
+
+  if (error) {
+    console.error("Sign-up error:", error); // Log the detailed error
+    return { data, error: { message: "Signup failed" } }; // Return a generic error
+  }
+
+  return { data, error };
 }
 
 export async function signOut() {

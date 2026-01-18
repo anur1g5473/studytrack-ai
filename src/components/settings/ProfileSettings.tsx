@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { User, Save, Loader2 } from "lucide-react";
-import { updateUserProfile } from "@/lib/supabase/settings-queries";
+// import { updateUserProfile } from "@/lib/supabase/settings-queries"; // Removed direct Supabase query
 import { useStore } from "@/store/useStore";
 
 // Preset avatars (using DiceBear API for generated avatars)
@@ -32,15 +32,31 @@ export function ProfileSettings() {
     setMessage("");
 
     try {
-      const updatedUser = await updateUserProfile(user.id, {
-        full_name: name,
-        avatar_url: avatar,
+      const response = await fetch("/api/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: name,
+          avatar_url: avatar,
+        }),
       });
-      setUser(updatedUser);
-      setMessage("Profile updated successfully!");
-    } catch (error) {
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Assuming the API returns the updated profile
+        setUser({
+          ...user,
+          full_name: data.full_name,
+          avatar_url: data.avatar_url,
+        });
+        setMessage("Profile updated successfully!");
+      } else {
+        throw new Error(data.error || "Failed to update profile.");
+      }
+    } catch (error: any) {
       console.error(error);
-      setMessage("Failed to update profile.");
+      setMessage(error.message || "Failed to update profile.");
     } finally {
       setLoading(false);
     }

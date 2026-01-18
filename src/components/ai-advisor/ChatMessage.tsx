@@ -1,13 +1,40 @@
-"use client";
-
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import rehypeRaw from "rehype-raw";
 import type { ChatMessage } from "@/types/chat.types";
-import { Bot, User, Sparkles } from "lucide-react";
+import { User, Sparkles } from "lucide-react";
+
+// Basic sanitization function (can be improved with a dedicated library like DOMPurify)
+function sanitizeHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  // Remove script tags
+  doc.querySelectorAll('script').forEach(script => script.remove());
+  // Remove event handlers from all elements
+  doc.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      if (attr.name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  return doc.body.innerHTML;
+}
+
+// Reusing the sanitizeInput for Markdown specific prompt injection defense
+function sanitizeMarkdownInput(input: string): string {
+  let sanitized = input.replace(/\`\`\`/g, ""); // Remove triple backticks
+  sanitized = sanitized.replace(/\`\`/g, "");   // Remove double backticks
+  sanitized = sanitized.replace(/\`/g, "");     // Remove single backticks
+  sanitized = sanitized.replace(/[<>&]/g, (match) => {
+    if (match === ">") return "&gt;";
+    if (match === "<") return "&lt;";
+    if (match === "&") return "&amp;";
+    return match; 
+  });
+  return sanitized.trim();
+}
 
 type ChatMessageProps = {
   message: ChatMessage;
@@ -16,9 +43,9 @@ type ChatMessageProps = {
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
-  // Process content to fix common math formatting issues
+  // Process content to fix common math formatting issues AND sanitize
   const processContent = (content: string): string => {
-    let processed = content;
+    let processed = sanitizeMarkdownInput(content); // First sanitize markdown injection attempts
 
     // Convert $...$ to proper KaTeX delimiters
     // Single $ for inline math
@@ -104,12 +131,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
           }`}
         >
           {isUser ? (
-            <p className="text-sm leading-relaxed">{message.content}</p>
+            <p className="text-sm leading-relaxed">{sanitizeHtml(message.content)}</p>
           ) : (
             <div className="ai-response">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex, rehypeRaw]}
+                rehypePlugins={[rehypeKatex]}
                 components={{
                   // Headings
                   h1: ({ children }) => (

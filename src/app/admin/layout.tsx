@@ -15,32 +15,17 @@ export default function AdminLayout({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-        const checkAdmin = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+    const checkAdmin = async () => {
+      const supabase = createClient(); // Still need client for signOut if not admin
 
-      console.log("Current User:", user); // DEBUG LOG
+      const response = await fetch("/api/admin/check");
+      const data = await response.json();
 
-      if (!user) {
-        console.log("No user found, redirecting to login");
-        router.push("/admin/login"); // Redirect to admin login specifically
-        return;
-      }
-
-      // Check admin status in profiles
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single();
-
-      console.log("Admin Profile Check:", profile); // DEBUG LOG
-
-      if (profile?.is_admin) {
+      if (data.isAdmin) {
         setIsAdmin(true);
       } else {
-        console.log("Not admin, kicking out");
-        await supabase.auth.signOut(); // Logout if they aren't admin
+        // If not admin, ensure they are logged out and redirect
+        await supabase.auth.signOut(); 
         router.push("/admin/login");
       }
       setLoading(false);

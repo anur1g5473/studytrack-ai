@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { X, Sparkles, Loader2 } from "lucide-react";
 import { generateFlashcards } from "@/lib/gemini";
-import * as queries from "@/lib/supabase/flashcard-queries";
+// import * as queries from "@/lib/supabase/flashcard-queries"; // Removed direct Supabase queries
 import { useStore } from "@/store/useStore";
 
 type CreateSetDialogProps = {
@@ -19,6 +19,7 @@ export function CreateSetDialog({ isOpen, onClose, onSuccess }: CreateSetDialogP
   const [count, setCount] = useState(5);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
+  const [error, setError] = useState<string | null>(null); // Added error state
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,40 +27,60 @@ export function CreateSetDialog({ isOpen, onClose, onSuccess }: CreateSetDialogP
 
     setLoading(true);
     setStatus("Generating content with AI...");
+    setError(null); // Clear previous errors
 
     try {
-      // 1. Generate Cards
+      // 1. Generate Cards using the Gemini API route
       const generatedCards = await generateFlashcards(topic, count);
       
       if (generatedCards.length === 0) {
-        throw new Error("AI returned no cards");
+        throw new Error("AI returned no cards. Please try a different topic.");
       }
 
       setStatus("Saving to database...");
 
-      // 2. Create Set
-      const newSet = await queries.createFlashcardSet(
-        user.id,
-        topic,
-        `AI Generated set about ${topic}`
+      // 2. Create Set using the API route
+      const createSetResponse = await fetch("/api/flashcards/sets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: topic,
+          description: `AI Generated set about ${topic}`,
+          // topicId: // If linking to syllabus topics, add here
+        }),
+      });
+      const newSet = await createSetResponse.json();
+
+      if (!createSetResponse.ok) {
+        throw new Error(newSet.error || "Failed to create flashcard set.");
+      }
+
+      // 3. Save Cards using the API route
+      // Batching card creation for efficiency, though API route expects one by one for now.
+      // A future enhancement could be a batch /api/flashcards/cards POST endpoint.
+      const cardPromises = generatedCards.map((card) =>
+        fetch("/api/flashcards/cards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            setId: newSet.id,
+            front: card.front,
+            back: card.back,
+          }),
+        }).then(res => {
+          if (!res.ok) return res.json().then(err => Promise.reject(err.error));
+          return res.json();
+        })
       );
-
-      // 3. Save Cards
-      const cardsToSave = generatedCards.map((card) => ({
-        set_id: newSet.id,
-        user_id: user.id,
-        front: card.front,
-        back: card.back,
-      }));
-
-      await queries.createFlashcards(cardsToSave);
+      await Promise.all(cardPromises);
 
       setStatus("Done!");
       onSuccess();
       onClose();
-    } catch (error) {
-      console.error(error);
-      setStatus("Error creating set. Try again.");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error creating set. Please try again.");
+      setStatus("Error creating set.");
     } finally {
       setLoading(false);
     }
@@ -110,9 +131,14 @@ export function CreateSetDialog({ isOpen, onClose, onSuccess }: CreateSetDialogP
             />
           </div>
 
-          {status && (
+          {status && !error && (
             <p className="text-sm text-center text-indigo-300 animate-pulse">
               {status}
+            </p>
+          )}
+          {error && (
+            <p className="text-sm text-center text-red-400">
+              {error}
             </p>
           )}
 

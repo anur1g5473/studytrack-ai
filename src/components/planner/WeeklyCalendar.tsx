@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
-import * as queries from "@/lib/supabase/planner-queries";
 import { DayColumn } from "./DayColumn";
 import { GeneratePlanDialog } from "./GeneratePlanDialog";
 import { Button } from "@/components/ui/Button";
@@ -33,11 +32,17 @@ export function WeeklyCalendar() {
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-      const tasks = await queries.fetchSchedule(
-        user.id,
-        startOfWeek.toISOString().split("T")[0],
-        endOfWeek.toISOString().split("T")[0]
-      );
+      const startDate = startOfWeek.toISOString().split("T")[0];
+      const endDate = endOfWeek.toISOString().split("T")[0];
+
+      const response = await fetch(`/api/planner/schedule?userId=${user.id}&startDate=${startDate}&endDate=${endDate}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch schedule");
+      }
+
+      const tasks = data;
 
       // Group by date
       const days: DayPlan[] = [];
@@ -82,7 +87,31 @@ export function WeeklyCalendar() {
       }))
     );
 
-    await queries.toggleTaskCompletion(taskId, status);
+    try {
+      const response = await fetch(`/api/planner/schedule/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isCompleted: status }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to toggle task completion");
+      }
+    } catch (error) {
+      console.error("Failed to toggle task completion:", error);
+      // TODO: Implement a more robust client-side error notification (e.g., toast)
+      // Revert optimistic update on error
+      setWeekPlan((prev) =>
+        prev.map((day) => ({
+          ...day,
+          tasks: day.tasks.map((t) =>
+            t.id === taskId ? { ...t, is_completed: !status } : t
+          ),
+        }))
+      );
+    }
   };
 
   const changeWeek = (direction: "prev" | "next") => {
