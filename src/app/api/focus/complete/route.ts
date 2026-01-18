@@ -5,7 +5,7 @@ import type { Distraction } from "@/types/focus.types";
 
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 

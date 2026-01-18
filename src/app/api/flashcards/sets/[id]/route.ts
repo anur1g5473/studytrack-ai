@@ -17,9 +17,9 @@ function sanitizeInput(input: string): string {
   return sanitized.trim();
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Input Validation for id
     if (typeof id !== "string" || id.trim() === "") {
@@ -54,9 +54,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -65,7 +65,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const updates: Partial<FlashcardSet> = await request.json();
 
     // Input Validation for id
@@ -90,10 +90,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         }
 
         // Sanitize string inputs
-        if (typeof updates[field] === "string") {
-          allowedUpdates[field as keyof FlashcardSet] = sanitizeInput(updates[field] as string) as any;
+        const fieldValue = (updates as any)[field];
+        if (typeof fieldValue === "string") {
+          allowedUpdates[field as keyof FlashcardSet] = sanitizeInput(fieldValue) as any;
         } else {
-          allowedUpdates[field as keyof FlashcardSet] = updates[field as keyof FlashcardSet];
+          allowedUpdates[field as keyof FlashcardSet] = fieldValue;
         }
       }
     }
@@ -135,9 +136,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -146,7 +147,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Input Validation for id
     if (typeof id !== "string" || id.trim() === "") {

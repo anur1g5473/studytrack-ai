@@ -1,11 +1,10 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import type { UserRank } from "@/types/gamification.types"; // Assuming UserRank type is defined
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -23,8 +22,8 @@ export async function GET(request: Request) {
     if (leaderboardError) throw leaderboardError;
 
     // Fetch current user's rank and surrounding users
-    let userRank: UserRank | null = null;
-    let usersAroundMe: UserRank[] = [];
+    let userRank: any = null;
+    let usersAroundMe: any[] = [];
 
     // This is an inefficient way to get user rank directly from frontend. 
     // Ideally, a Supabase function (RPC) or a materialized view should calculate ranks efficiently.

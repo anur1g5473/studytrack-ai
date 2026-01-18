@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 

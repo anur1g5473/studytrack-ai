@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createAnnouncement, fetchAnnouncements, deleteAnnouncement } from "@/lib/supabase/admin-queries";
 import { Button } from "@/components/ui/Button";
 import { Megaphone, Trash2, AlertTriangle, Info, CheckCircle } from "lucide-react";
 
@@ -12,8 +11,15 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false);
 
   const loadData = async () => {
-    const data = await fetchAnnouncements();
-    setAnnouncements(data || []);
+    try {
+      const response = await fetch("/api/admin/announcements");
+      const data = await response.json();
+      if (response.ok) {
+        setAnnouncements(data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load announcements:", error);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -23,16 +29,35 @@ export default function AdminSettings() {
     if (!message.trim()) return;
     
     setLoading(true);
-    await createAnnouncement(message, type);
-    setMessage("");
-    loadData();
-    setLoading(false);
+    try {
+      const response = await fetch("/api/admin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, type }),
+      });
+      if (response.ok) {
+        setMessage("");
+        loadData();
+      }
+    } catch (error) {
+      console.error("Failed to create announcement:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Remove this announcement?")) return;
-    await deleteAnnouncement(id);
-    loadData();
+    try {
+      const response = await fetch(`/api/admin/announcements/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        loadData();
+      }
+    } catch (error) {
+      console.error("Failed to delete announcement:", error);
+    }
   };
 
   return (

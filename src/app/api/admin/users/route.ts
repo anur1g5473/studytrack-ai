@@ -1,7 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import type { UserProfile } from "@/types/auth.types"; // Assuming you have a UserProfile type
+import type { Profile } from "@/types/database.types";
 
 // Helper to check admin status
 async function isAdmin(supabase: any, userId: string): Promise<boolean> {
@@ -15,7 +15,7 @@ async function isAdmin(supabase: any, userId: string): Promise<boolean> {
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 

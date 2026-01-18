@@ -14,7 +14,7 @@ async function isAdmin(supabase: any, userId: string): Promise<boolean> {
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 

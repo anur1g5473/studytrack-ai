@@ -1,11 +1,23 @@
+import { redirect } from "next/navigation";
+import { createServerClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { Sidebar } from "@/components/shared/Sidebar";
 import { DashboardHeader } from "@/components/shared/DashboardHeader";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const supabase = await createServerClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       <DashboardHeader />

@@ -12,9 +12,9 @@ async function isAdmin(supabase: any, userId: string): Promise<boolean> {
   return !error && profile?.is_admin === true;
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -27,7 +27,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Input validation
     if (typeof id !== "string" || id.trim() === "") {

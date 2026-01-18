@@ -31,7 +31,7 @@ function sanitizeInput(input: string): string {
 // Server-side AI context fetching using server-side Supabase client
 async function fetchAIContext(userId: string): Promise<AIContext> {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   try {
     // Fetch user profile
@@ -284,7 +284,7 @@ export async function POST(request: Request) {
 
       // Verify user authentication
       const cookieStore = cookies();
-      const supabase = createServerClient(cookieStore);
+      const supabase = await createServerClient(cookieStore);
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user || user.id !== userId) {

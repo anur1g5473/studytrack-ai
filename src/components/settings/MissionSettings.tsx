@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Target, Save, Loader2, Calendar } from "lucide-react";
-import { updateUserProfile } from "@/lib/supabase/settings-queries";
 import { useStore } from "@/store/useStore";
 
 const GOALS = ["NEET", "JEE", "College", "Skill-Learning", "Professional Exam", "Other"];
@@ -23,13 +22,24 @@ export function MissionSettings() {
     setMessage("");
 
     try {
-      const updatedUser = await updateUserProfile(user.id, {
-        mission_goal: goal,
-        exam_date: examDate || null,
-        daily_study_hours: hours,
+      const response = await fetch("/api/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mission_goal: goal,
+          exam_date: examDate || null,
+          daily_study_hours: hours,
+        }),
       });
-      setUser(updatedUser);
-      setMessage("Mission parameters updated!");
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUser(data);
+        setMessage("Mission parameters updated!");
+      } else {
+        throw new Error(data.error || "Failed to update settings.");
+      }
     } catch (error) {
       console.error(error);
       setMessage("Failed to update settings.");

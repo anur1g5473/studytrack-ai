@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Calendar, Target, Clock, Zap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { OnboardingModal } from "@/components/modals/OnboardingModal";
+import { sanitizeInput } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { user, isLoading } = useStore();
@@ -49,7 +50,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">
           Welcome back,{" "}
-          <span className="text-indigo-400">{user.full_name?.split(" ")[0] || "Agent"}</span>
+          <span className="text-indigo-400">{user.full_name ? sanitizeInput(user.full_name.split(" ")[0]) : "Agent"}</span>
         </h1>
         <p className="text-gray-400">
           Ready to continue your mission? Here's what's next.
@@ -63,7 +64,7 @@ export default function DashboardPage() {
             <Target className="w-4 h-4" />
             <div className="text-sm">Mission Goal</div>
           </div>
-          <div className="text-2xl font-bold text-white">{user.mission_goal}</div>
+          <div className="text-2xl font-bold text-white">{user.mission_goal ? sanitizeInput(user.mission_goal) : ""}</div>
         </div>
 
         <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">

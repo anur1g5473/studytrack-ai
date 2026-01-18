@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 import { FocusMode } from "@/components/focus/FocusMode";
 
 export default async function FocusPage() {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const cookieStore = await cookies();
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
 

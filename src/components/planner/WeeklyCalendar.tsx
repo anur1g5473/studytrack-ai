@@ -42,7 +42,7 @@ export function WeeklyCalendar() {
         throw new Error(data.error || "Failed to fetch schedule");
       }
 
-      const tasks = data;
+      const tasks: ScheduleTask[] = data;
 
       // Group by date
       const days: DayPlan[] = [];
@@ -51,9 +51,9 @@ export function WeeklyCalendar() {
         d.setDate(d.getDate() + i);
         const dateStr = d.toISOString().split("T")[0];
         
-        const dayTasks = tasks.filter((t) => t.scheduled_date === dateStr);
+        const dayTasks = tasks.filter((t: ScheduleTask) => t.scheduled_date === dateStr);
         const totalMinutes = dayTasks.reduce(
-          (sum, t) => sum + (t.topic?.estimated_minutes || 30),
+          (sum: number, t: ScheduleTask) => sum + (t.topic?.estimated_minutes || 30),
           0
         );
 

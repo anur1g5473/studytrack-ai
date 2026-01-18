@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
 import { PlusCircle, Trash2, Edit, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -138,16 +137,15 @@ export default function AdminAnnouncementsPage() {
               <div>
                 <p className="text-white text-base mb-1">{announcement.message}</p>
                 <p className="text-gray-400 text-xs">
-                  Published: {format(new Date(announcement.created_at), "MMM d, yyyy h:mm a")}
+                  Published: {new Date(announcement.created_at).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex gap-2">
                 {/* Edit functionality can be added here if needed */}
                 <Button
                   variant="ghost"
-                  size="icon"
                   onClick={() => handleDeleteAnnouncement(announcement.id)}
-                  className="text-red-400 hover:bg-red-900/20"
+                  className="text-red-400 hover:bg-red-900/20 p-2"
                   title="Delete Announcement"
                 >
                   <Trash2 className="w-4 h-4" />

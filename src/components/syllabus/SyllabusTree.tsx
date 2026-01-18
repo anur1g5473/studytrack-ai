@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
 import { useSubjects } from "@/hooks/useSubjects";
 import { useSyllabus } from "@/hooks/useSyllabus";
-import * as queries from "@/lib/supabase/queries";
 import { Button } from "@/components/ui/Button";
 import { Plus, BookOpen } from "lucide-react";
 import { AddSubjectDialog } from "./AddSubjectDialog";
@@ -15,7 +14,7 @@ import type { Chapter, Topic } from "@/types/database.types";
 
 export function SyllabusTree() {
   const { user } = useStore();
-  const { subjects, loading: subjectsLoading, fetchSubjects, addSubject } = useSubjects();
+  const { subjects, loading: subjectsLoading, fetchSubjects, addSubject, deleteSubject } = useSubjects();
   const {
     loading: syllabusLoading,
     addChapter,
@@ -58,12 +57,20 @@ export function SyllabusTree() {
         const topicsData: Record<string, Topic[]> = {};
 
         for (const subject of subjects) {
-          const subjectChapters = await queries.fetchChapters(subject.id);
-          chaptersData[subject.id] = subjectChapters;
+          // Fetch chapters via API
+          const chaptersResponse = await fetch(`/api/syllabus/chapters?subjectId=${subject.id}`);
+          if (chaptersResponse.ok) {
+            const subjectChapters = await chaptersResponse.json();
+            chaptersData[subject.id] = subjectChapters;
 
-          for (const chapter of subjectChapters) {
-            const chapterTopics = await queries.fetchTopics(chapter.id);
-            topicsData[chapter.id] = chapterTopics;
+            for (const chapter of subjectChapters) {
+              // Fetch topics via API
+              const topicsResponse = await fetch(`/api/syllabus/topics?chapterId=${chapter.id}`);
+              if (topicsResponse.ok) {
+                const chapterTopics = await topicsResponse.json();
+                topicsData[chapter.id] = chapterTopics;
+              }
+            }
           }
         }
 
@@ -142,7 +149,6 @@ export function SyllabusTree() {
 
     try {
       if (deleteTarget.type === "subject") {
-        const { deleteSubject } = await import("@/lib/supabase/queries");
         await deleteSubject(deleteTarget.id);
         setChapters((prev) => {
           const newChapters = { ...prev };

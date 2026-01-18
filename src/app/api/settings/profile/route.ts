@@ -5,7 +5,7 @@ import type { Profile } from "@/types/database.types"; // Assuming Profile type 
 
 export async function PUT(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -41,7 +41,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "Daily study hours must be between 0.5 and 24." }, { status: 400 });
         }
 
-        allowedUpdates[field as keyof Profile] = updates[field as keyof Profile];
+        allowedUpdates[field as keyof Profile] = (updates as any)[field];
       }
     }
 

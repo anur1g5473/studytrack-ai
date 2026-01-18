@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 
 export async function fetchFullSyllabus(userId: string) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   // Fetch subjects with nested chapters and topics using a single query (JOINs or RPC would be better for performance)
   // For simplicity, this still fetches in a nested manner, but on the server-side.

@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { Flashcard } from "@/types/flashcard.types";
-import { SRS_ALGORITHMS } from "@/lib/srs-algorithm"; // Assuming SRS_ALGORITHMS is defined
+import { calculateNextReview } from "@/lib/srs-algorithm";
 
 // Basic sanitization function
 function sanitizeInput(input: string): string {
@@ -18,9 +18,9 @@ function sanitizeInput(input: string): string {
   return sanitized.trim();
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Input Validation for id
     if (typeof id !== "string" || id.trim() === "") {
@@ -55,9 +55,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -66,7 +66,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const updates = await request.json();
 
     // Input Validation for id
@@ -78,7 +78,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (updates.action === "updateProgress" && typeof updates.quality === "number") {
       const { data: currentCard, error: fetchError } = await supabase
         .from("flashcards")
-        .select("repetitions, ease_factor, interval_days, last_studied_at")
+        .select("box, interval, ease_factor, next_review_date")
         .eq("id", id)
         .eq("user_id", user.id) // Ownership check
         .single();
@@ -88,17 +88,22 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ error: "Flashcard not found or not owned by user." }, { status: 404 });
       }
 
-      const { repetitions, ease_factor, interval_days, next_review_at } = SRS_ALGORITHMS.sm2(currentCard, updates.quality);
+      // Convert quality (0-5) to ReviewRating
+      let rating: "again" | "hard" | "good" | "easy" = "again";
+      if (updates.quality >= 5) rating = "easy";
+      else if (updates.quality >= 4) rating = "good";
+      else if (updates.quality >= 3) rating = "hard";
+
+      const updatedFields = calculateNextReview(currentCard as any, rating);
 
       const { data: updatedCard, error } = await supabase
         .from("flashcards")
         .update({
-          repetitions,
-          ease_factor,
-          interval_days,
-          last_studied_at: new Date().toISOString(),
-          next_review_at,
-          difficulty: updates.quality < 3 ? "hard" : updates.quality < 4 ? "medium" : "easy", // Update difficulty based on quality
+          box: updatedFields.box,
+          interval: updatedFields.interval,
+          ease_factor: updatedFields.ease_factor,
+          next_review_date: updatedFields.next_review_date,
+          last_reviewed: updatedFields.last_reviewed,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
@@ -178,9 +183,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -189,7 +194,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Input Validation for id
     if (typeof id !== "string" || id.trim() === "") {

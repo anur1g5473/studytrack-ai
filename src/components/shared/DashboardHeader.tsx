@@ -7,7 +7,7 @@ import { useStore } from "@/store/useStore";
 import { Button } from "@/components/ui/Button";
 import { Zap, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeInput } from "@/lib/utils";
 
 export function DashboardHeader() {
   const { user } = useStore();
@@ -40,7 +40,7 @@ export function DashboardHeader() {
           <div className="hidden md:flex items-center gap-4">
             <div className="text-right">
               <div className="text-sm font-medium text-white">
-                {user?.full_name || "Mission Specialist"}
+                {user?.full_name ? sanitizeInput(user.full_name) : "Mission Specialist"}
               </div>
               <div className="text-xs text-gray-400">Level {user?.current_level || 1}</div>
             </div>
@@ -63,7 +63,7 @@ export function DashboardHeader() {
           <div className="mt-4 md:hidden flex flex-col gap-3 border-t border-gray-800 pt-4">
             <div className="text-sm">
               <div className="font-medium text-white">
-                {user?.full_name || "Mission Specialist"}
+                {user?.full_name ? sanitizeInput(user.full_name) : "Mission Specialist"}
               </div>
               <div className="text-xs text-gray-400">Level {user?.current_level || 1}</div>
             </div>

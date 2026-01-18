@@ -1,11 +1,12 @@
 import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import type { FocusSession, Subject, Chapter, Topic } from "@/types/database.types";
+import type { Subject, Chapter, Topic } from "@/types/database.types";
+import type { FocusSession } from "@/types/focus.types";
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    focusSessions.forEach((session: FocusSession) => {
+    focusSessions.forEach((session: any) => {
       totalStudyTime += session.duration_minutes;
       totalXpEarned += session.xp_earned;
       totalDistractions += session.distraction_count;
@@ -93,23 +94,23 @@ export async function GET(request: Request) {
 
     // Flatten syllabus for easier lookup
     const allTopics: { [key: string]: Topic } = {};
-    subjects.forEach((s: Subject & { chapters: (Chapter & { topics: Topic[] })[] }) => {
-      s.chapters.forEach((c) => {
-        c.topics.forEach((t) => {
+    subjects.forEach((s: any) => {
+      s.chapters.forEach((c: any) => {
+        c.topics.forEach((t: any) => {
           allTopics[t.id] = t;
         });
       });
     });
 
     // Enhance subject data with aggregated stats and detailed topics
-    const subjectsWithStats = subjects.map((subject: Subject & { chapters: (Chapter & { topics: Topic[] })[] }) => ({
+    const subjectsWithStats = subjects.map((subject: any) => ({
       ...subject,
       totalStudyTime: studyTimeBySubject[subject.id] || 0,
       totalXp: xpBySubject[subject.id] || 0,
       totalDistractions: distractionCountBySubject[subject.id] || 0,
-      chapters: subject.chapters.map(chapter => ({
+      chapters: subject.chapters.map((chapter: any) => ({
         ...chapter,
-        topics: chapter.topics.map(topic => ({
+        topics: chapter.topics.map((topic: any) => ({
           ...topic,
           totalStudyTime: studyTimeByTopic[topic.id] || 0,
         })),

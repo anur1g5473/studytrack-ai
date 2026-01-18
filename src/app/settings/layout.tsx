@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { DashboardHeader } from "@/components/shared/DashboardHeader";
 import { Sidebar } from "@/components/shared/Sidebar";
 
-export default async function SyllabusLayout({
+export default async function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;

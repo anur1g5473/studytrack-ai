@@ -2,7 +2,6 @@ import { createServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { Flashcard } from "@/types/flashcard.types";
-import { SRS_ALGORITHMS } from "@/lib/srs-algorithm"; // Assuming SRS_ALGORITHMS is defined
 
 // Basic sanitization function
 function sanitizeInput(input: string): string {
@@ -20,7 +19,7 @@ function sanitizeInput(input: string): string {
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -57,7 +56,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 

@@ -10,11 +10,9 @@ import { DistractionAnalysis } from "./DistractionAnalysis";
 import { SubjectBreakdown } from "./SubjectBreakdown";
 import { XPProgression } from "./XPProgression";
 import { BarChart3, Flame, Zap, Target, Clock } from "lucide-react";
-import type { AnalyticsData } from "@/types/analytics.types";
-
 export function AnalyticsDashboard() {
   const { user } = useStore();
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // Added error state
   const [daysBack, setDaysBack] = useState(30);
@@ -137,7 +135,7 @@ export function AnalyticsDashboard() {
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <StudyTrendChart sessions={analytics.focusScoreHistory.map(item => ({ date: item.date, duration: item.score }))} /> {/* Mapping focusScoreHistory to StudyTrendChart expected prop */}
+        <StudyTrendChart sessions={analytics.focusScoreHistory.map((item: { date: string; score: number }) => ({ date: item.date, duration: item.score }))} /> {/* Mapping focusScoreHistory to StudyTrendChart expected prop */}
         <FocusHeatmap hourlyStats={[]} /> {/* hourlyStats not directly available yet, needs further aggregation in API */}
       </div>
 
@@ -153,7 +151,7 @@ export function AnalyticsDashboard() {
         currentLevel={analytics.profile?.current_level || 1}
         totalXPEarned={analytics.totalXpEarned}
         totalSessions={analytics.focusScoreHistory.length} // Using focus session count as total sessions
-        averageFocusScore={analytics.focusScoreHistory.reduce((sum, item) => sum + item.score, 0) / analytics.focusScoreHistory.length || 0}
+        averageFocusScore={analytics.focusScoreHistory.reduce((sum: number, item: { date: string; score: number }) => sum + item.score, 0) / analytics.focusScoreHistory.length || 0}
       />
     </div>
   );

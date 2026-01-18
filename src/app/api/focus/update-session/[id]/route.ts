@@ -3,9 +3,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { FocusSession } from "@/types/focus.types";
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = await createServerClient(cookieStore);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -14,7 +14,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const updates: Partial<FocusSession> = await request.json();
 
     // Input Validation for id
@@ -49,7 +49,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: `Unauthorized attempt to update sensitive field: ${field}.` }, { status: 403 });
         }
 
-        allowedUpdates[field as keyof FocusSession] = updates[field as keyof FocusSession];
+        allowedUpdates[field as keyof FocusSession] = (updates as any)[field];
       }
     }
 
